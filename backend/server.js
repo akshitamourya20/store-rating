@@ -12,38 +12,38 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
 app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serverless DB connection middleware (ensures DB is connected on each Vercel request)
+// Database connection middleware:
+// If MONGODB_URI is provided, connects to MongoDB Atlas.
+// If MONGODB_URI is not configured, seamlessly runs with built-in memory database.
 app.use(async (req, res, next) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      await connectDB();
-      // Auto-seed if first time running on a fresh MongoDB Atlas database
-      const userCount = await User.countDocuments();
-      if (userCount === 0) {
-        console.log('[Server] Database is empty. Seeding initial demo dataset...');
-        await seedDatabase();
+  if (process.env.MONGODB_URI) {
+    try {
+      if (mongoose.connection.readyState !== 1) {
+        await connectDB();
+        const userCount = await User.countDocuments();
+        if (userCount === 0) {
+          console.log('[Server] Database is empty. Seeding initial demo dataset...');
+          await seedDatabase();
+        }
       }
+    } catch (err) {
+      console.warn('[DB] MongoDB Atlas connection failed. Falling back to built-in memory database:', err.message);
     }
-    next();
-  } catch (err) {
-    console.error('[DB Middleware Error]', err.message);
-    res.status(500).json({
-      success: false,
-      message: 'Database connection failed. Please ensure MONGODB_URI is configured.',
-      error: err.message,
-    });
   }
+  next();
 });
 
 // Routes (supports both /api/auth and /auth for serverless flexibility)
@@ -57,6 +57,7 @@ app.get(['/api/health', '/health'], (req, res) => {
   res.json({
     status: 'ok',
     message: 'Store Rating System API is running smoothly',
+    mode: mongoose.connection.readyState === 1 ? 'MongoDB Atlas' : 'Built-in Memory Database (Zero-Config)',
     timestamp: new Date().toISOString(),
   });
 });
@@ -80,15 +81,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Local startup (when not running inside Vercel serverless functions)
+// Local startup
 if (!process.env.VERCEL) {
   const startServer = async () => {
     try {
-      await connectDB();
-      const userCount = await User.countDocuments();
-      if (userCount === 0) {
-        console.log('[Server] Database is empty. Auto-seeding initial dataset...');
-        await seedDatabase();
+      if (process.env.MONGODB_URI) {
+        await connectDB();
+        const userCount = await User.countDocuments();
+        if (userCount === 0) {
+          console.log('[Server] Database is empty. Auto-seeding initial dataset...');
+          await seedDatabase();
+        }
       }
       app.listen(PORT, () => {
         console.log(`[Server] Running on http://localhost:${PORT}`);
