@@ -1,0 +1,22 @@
+{
+  "name": "roxiler-store-rating-app",
+  "version": "1.0.0",
+  "description": "Store Rating System MERN application for Roxiler FullStack Coding Challenge",
+  "scripts": {
+    "start:backend": "npm --prefix backend start",
+    "dev:backend": "npm --prefix backend run dev",
+    "start:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test"
+  },
+  "keywords": [
+    "mern",
+    "store-rating",
+    "react",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC"
+}
