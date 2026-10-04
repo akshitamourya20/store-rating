@@ -6,7 +6,7 @@
     "start:backend": "npm --prefix backend start",
     "dev:backend": "npm --prefix backend run dev",
     "start:frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
+    "build": "cd frontend && npm install && npm run build",
     "seed": "npm --prefix backend run seed",
     "test": "npm --prefix backend test"
   },
