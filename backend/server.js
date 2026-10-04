@@ -12,7 +12,14 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,14 +46,14 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
-app.use('/api/stores', require('./routes/storeRoutes'));
-app.use('/api/ratings', require('./routes/ratingRoutes'));
+// Routes (supports both /api/auth and /auth for serverless flexibility)
+app.use(['/api/auth', '/auth'], require('./routes/authRoutes'));
+app.use(['/api/admin', '/admin'], require('./routes/adminRoutes'));
+app.use(['/api/stores', '/stores'], require('./routes/storeRoutes'));
+app.use(['/api/ratings', '/ratings'], require('./routes/ratingRoutes'));
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({
     status: 'ok',
     message: 'Store Rating System API is running smoothly',
