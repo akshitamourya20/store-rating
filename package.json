@@ -6,9 +6,21 @@
     "start:backend": "npm --prefix backend start",
     "dev:backend": "npm --prefix backend run dev",
     "start:frontend": "npm --prefix frontend run dev",
-    "build:frontend": "npm --prefix frontend run build",
+    "build": "npm --prefix frontend run build",
     "seed": "npm --prefix backend run seed",
     "test": "npm --prefix backend test"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.5.1"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "^9.4.0"
   },
   "keywords": [
     "mern",

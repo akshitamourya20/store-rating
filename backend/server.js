@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
 const { connectDB } = require('./config/db');
 const User = require('./models/User');
 const { seedDatabase } = require('./seed/seedData');
@@ -14,6 +15,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serverless DB connection middleware (ensures DB is connected on each Vercel request)
+app.use(async (req, res, next) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+      // Auto-seed if first time running on a fresh MongoDB Atlas database
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('[Server] Database is empty. Seeding initial demo dataset...');
+        await seedDatabase();
+      }
+    }
+    next();
+  } catch (err) {
+    console.error('[DB Middleware Error]', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed. Please ensure MONGODB_URI is configured.',
+      error: err.message,
+    });
+  }
+});
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -49,27 +73,25 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-// Start Server after DB Connection
-const startServer = async () => {
-  try {
-    await connectDB();
-
-    // Auto-seed if database is empty
-    const userCount = await User.countDocuments();
-    if (userCount === 0) {
-      console.log('[Server] Database is empty. Auto-seeding initial dataset...');
-      await seedDatabase();
+// Local startup (when not running inside Vercel serverless functions)
+if (!process.env.VERCEL) {
+  const startServer = async () => {
+    try {
+      await connectDB();
+      const userCount = await User.countDocuments();
+      if (userCount === 0) {
+        console.log('[Server] Database is empty. Auto-seeding initial dataset...');
+        await seedDatabase();
+      }
+      app.listen(PORT, () => {
+        console.log(`[Server] Running on http://localhost:${PORT}`);
+      });
+    } catch (err) {
+      console.error('[Server] Startup failed:', err);
     }
+  };
 
-    app.listen(PORT, () => {
-      console.log(`[Server] Running on http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error('[Server] Startup failed:', err);
-    process.exit(1);
-  }
-};
-
-startServer();
+  startServer();
+}
 
 module.exports = app;
